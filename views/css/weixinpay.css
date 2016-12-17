@@ -1,0 +1,68 @@
+/* CSS Document */
+.order-box{border-bottom:4px solid #4b5b78;}
+.order-box .o-left {
+  float: left;
+  padding-bottom: 10px;
+  padding-top: 10px;
+  width: 640px;
+}
+.order-box .o-title {
+  font-size: 14px;
+  height: 26px;
+  line-height: 26px;
+  overflow: hidden;
+	margin:0;
+	font-weight: bold;
+}
+.order-box .o-tips {
+  height: 20px;
+  line-height: 20px;
+}
+.order-box .o-right {
+  float: right;
+  overflow: hidden;
+  padding-bottom: 10px;
+  padding-right: 50px;
+  padding-top: 10px;
+  width: 190px;
+}
+.order-box .o-price-number strong {
+  color: #ff5d5b;
+  font-size: 18px;
+  margin: 0 3px;
+  vertical-align: bottom;
+}
+.font-red {
+  color: #ff5d5b;
+}
+.border-grey{border: 1px solid #ccc;}
+.image-box{background: rgba(0, 0, 0, 0) url("../img/phone-bg.png") no-repeat scroll right 0;width: 700px;margin:0 auto;}
+.box-left{width: 300px;}
+.pw-box-ft {
+  background: #ff7674 url("../img/icon-red.png") no-repeat scroll 50px 8px;
+  padding: 8px 0 8px 125px;
+	 margin-top: 50px;
+}
+.pw-box-ft p {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 22px;
+  margin: 0;
+}
+p.payment_module a.winxinpay {
+	background: #fbfbfb url("../img/logo.png") no-repeat scroll 15px center;
+}
+p.payment_module a.winxinpay::after {
+  color: #777;
+  content: "";
+  display: block;
+  font-family: "FontAwesome";
+  font-size: 25px;
+  height: 22px;
+  margin-top: -11px;
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  width: 14px;
+}
