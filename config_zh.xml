@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<module>
+    <name>weixinpay</name>
+    <displayName><![CDATA[微信支付]]></displayName>
+    <version><![CDATA[1.0.4.17]]></version>
+    <description><![CDATA[您可以使用腾讯微信支付]]></description>
+    <author><![CDATA[Yiuked]]></author>
+    <tab><![CDATA[payments_gateways]]></tab>
+	<confirmUninstall><![CDATA[您确定要删除细节细节吗?]]></confirmUninstall>
+    <is_configurable>1</is_configurable>
+    <need_instance>1</need_instance>
+	<limited_countries></limited_countries>
+</module>

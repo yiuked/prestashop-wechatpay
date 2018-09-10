@@ -31,7 +31,7 @@ ob_start();
 //初始化日志
 $logHandler = new CLogFileHandler(WXP_MODDULE_DIR . WXP_MODDULE_LOGS . date('Y-m-d') . '.notify.log');
 $log = Log::init($logHandler, 15);
-
+define('WX_DEBUG', true);
 class PayNotifyCallBack extends WxPayNotify
 {
     //查询订单
@@ -63,7 +63,7 @@ class PayNotifyCallBack extends WxPayNotify
             $msg = "输入参数不正确";
             return false;
         }
-        
+
         //查询订单，判断订单真实性
         if (!$this->queryOrder($data["transaction_id"])) {
             $msg = "订单查询失败";
@@ -83,6 +83,7 @@ class PayNotifyCallBack extends WxPayNotify
             return false;
         }
         $customer = new Customer($cart->id_customer);
+
         if (!Validate::isLoadedObject($customer)) {
             return false;
         }
@@ -100,6 +101,7 @@ class PayNotifyCallBack extends WxPayNotify
         if ($total_conver != $valida_total) {
             $order_status = _PS_OS_ERROR_;
         }
+
         if ($weixinpay->validateOrder($cart->id, $order_status, $total, $weixinpay->displayName, null, array(), (int)$currency->id, false, $customer->secure_key)) {
             $order = new Order($weixinpay->currentOrder);
             $orderPayments = OrderPayment::getByOrderReference($order->reference);

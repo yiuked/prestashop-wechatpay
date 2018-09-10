@@ -25,6 +25,7 @@
 require_once(_PS_MODULE_DIR_ . 'weixinpay/defines.php');
 require_once(WXP_MODDULE_DIR . 'classes/WxPay.NativePay.php');
 require_once(WXP_MODDULE_DIR . 'classes/qrcode/QRencode.php');
+require_once(WXP_MODDULE_DIR . 'classes/Log.php');
 
 class WeixinpayValidationModuleFrontController extends ModuleFrontController
 {
@@ -44,6 +45,9 @@ class WeixinpayValidationModuleFrontController extends ModuleFrontController
     {
         parent::initContent();
 
+        $logHandler = new CLogFileHandler(WXP_MODDULE_DIR . WXP_MODDULE_LOGS . date('Y-m-d') . '.log');
+        $log = Log::init($logHandler, 15);
+
         $cart = $this->context->cart;
         $customer = $this->context->customer;
 
@@ -57,10 +61,12 @@ class WeixinpayValidationModuleFrontController extends ModuleFrontController
             $this->context->cookie->qrcode_list_timestamp = time();
         }
         $filename = 'WXP-' . $cart->id . "-" . $this->context->cookie->qrcode_list_timestamp . '.png';
-        $url = $this->generateQR($cart);
+        $url = $this->unifiedOrder($cart);
 
         if ($url) {
             QRcode::png($url, WXP_MODDULE_DIR . WXP_MODDULE_DATA . $filename, WXP_QRCODE_E_LEVEL, WXP_QRCODE_SIZE);
+        } else {
+            Log::DEBUG("WeixinpayValidationModuleFrontController:unifiedOrder() is return false");
         }
 
         $cartTotal = $cart->getOrderTotal(true, Cart::BOTH);
@@ -120,7 +126,7 @@ class WeixinpayValidationModuleFrontController extends ModuleFrontController
         return $url;
     }
 
-    public function unifiedOrder($cart, $reference)
+    public function unifiedOrder($cart)
     {
         $total = (float)$cart->getOrderTotal(true, Cart::BOTH);
         $total = (int)($total * 100);
@@ -152,19 +158,19 @@ class WeixinpayValidationModuleFrontController extends ModuleFrontController
         $input = new WxPayUnifiedOrder();
         $input->SetBody($detail);
         $input->SetDetail($detail);
-        $input->SetOut_trade_no($reference);
+        $input->SetOut_trade_no($cart->id);
         $input->SetTotal_fee($total);
         $input->SetTime_start($time_start);
         $input->SetTime_expire($time_expire);
         $input->SetNotify_url(Configuration::get('WEIXIN_NOTIFY_URL'));
         $input->SetTrade_type("NATIVE");
-        $input->SetProduct_id($reference);
+        $input->SetProduct_id($cart->id);
         $result = $notify->getPayUrl($input);
 
         if (isset($result["code_url"])) {
             return $result["code_url"];
         }
-
+        Log::DEBUG("统一下单失败,返回信息:" . $result);
         return false;
     }
 

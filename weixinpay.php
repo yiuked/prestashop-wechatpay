@@ -49,7 +49,7 @@ class Weixinpay extends PaymentModule
         $this->currencies_mode = 'checkbox';
         $this->module_key = '3ec3536af1d608ffbd41748925a9fd55';
 
-        $config = Configuration::getMultiple(array('WEIXIN_APPID', 'WEIXIN_MCH_ID', 'WEIXIN_NOTIFY_URL', 'WEIXIN_KEY', 'WEIXIN_VALIDATE_URL', 'WEIXIN_ENABLED_H5PAY', 'WEIXIN_APPSECRET'));
+        $config = Configuration::getMultiple(array('WEIXIN_APPID', 'WEIXIN_MCH_ID', 'WEIXIN_NOTIFY_URL', 'WEIXIN_KEY',  'WEIXIN_ENABLED_H5PAY', 'WEIXIN_APPSECRET'));
         if (!empty($config['WEIXIN_APPID'])) {
             $this->appid = $config['WEIXIN_APPID'];
         }
@@ -61,9 +61,6 @@ class Weixinpay extends PaymentModule
         }
         if (!empty($config['WEIXIN_NOTIFY_URL'])) {
             $this->notify = $config['WEIXIN_NOTIFY_URL'];
-        }
-        if (!empty($config['WEIXIN_VALIDATE_URL'])) {
-            $this->validate = $config['WEIXIN_VALIDATE_URL'];
         }
         if (isset($config['WEIXIN_ENABLED_H5PAY'])) {
             $this->H5Pay = $config['WEIXIN_ENABLED_H5PAY'];
@@ -103,7 +100,6 @@ class Weixinpay extends PaymentModule
             || !Configuration::deleteByName('WEIXIN_MCH_ID')
             || !Configuration::deleteByName('WEIXIN_KEY')
             || !Configuration::deleteByName('WEIXIN_NOTIFY_URL')
-            || !Configuration::deleteByName('WEIXIN_VALIDATE_URL')
             || !Configuration::deleteByName('WEIXIN_ENABLED_H5PAY')
             || !Configuration::deleteByName('WEIXIN_APPSECRET')
             || !parent::uninstall()
@@ -125,9 +121,7 @@ class Weixinpay extends PaymentModule
                 $this->_postErrors[] = $this->l('Merchant key is required.');
             } elseif (!Tools::getValue('WEIXIN_NOTIFY_URL')) {
                 $this->_postErrors[] = $this->l('Notify url is required.');
-            } elseif (!Tools::getValue('WEIXIN_VALIDATE_URL')) {
-                $this->_postErrors[] = $this->l('Validate url is required.');
-            } elseif (Tools::getValue('WEIXIN_ENABLED_H5PAY') && !Tools::getValue('WEIXIN_APPSECRET')) {
+            }elseif (Tools::getValue('WEIXIN_ENABLED_H5PAY') && !Tools::getValue('WEIXIN_APPSECRET')) {
                 $this->_postErrors[] = $this->l('APPSecret is required.');
             }
         }
@@ -140,7 +134,6 @@ class Weixinpay extends PaymentModule
             Configuration::updateValue('WEIXIN_MCH_ID', Tools::getValue('WEIXIN_MCH_ID'));
             Configuration::updateValue('WEIXIN_KEY', Tools::getValue('WEIXIN_KEY'));
             Configuration::updateValue('WEIXIN_NOTIFY_URL', Tools::getValue('WEIXIN_NOTIFY_URL'));
-            Configuration::updateValue('WEIXIN_VALIDATE_URL', Tools::getValue('WEIXIN_VALIDATE_URL'));
             Configuration::updateValue('WEIXIN_ENABLED_H5PAY', Tools::getValue('WEIXIN_ENABLED_H5PAY'));
             Configuration::updateValue('WEIXIN_APPSECRET', Tools::getValue('WEIXIN_APPSECRET'));
         }
@@ -223,12 +216,12 @@ class Weixinpay extends PaymentModule
             if ($id_order > 0) {
                 $order = new Order($id_order);
                 if ($order->current_state == Configuration::get('PS_OS_PAYMENT')) {
-                    die(Tools::jsonEncode(array('status' => 1)));
+                    die(json_encode(array('status' => 1)));
                 }
             }
         }
         sleep(1);
-        die(Tools::jsonEncode(array('status' => 0)));
+        die(json_encode(array('status' => 0)));
     }
 
     public function hookPaymentReturn($params)
@@ -335,13 +328,6 @@ class Weixinpay extends PaymentModule
                         'required' => true
                     ),
                     array(
-                        'type' => 'text',
-                        'label' => $this->l('Validate Url'),
-                        'name' => 'WEIXIN_VALIDATE_URL',
-                        'desc' => $this->l('Payment validate URL.'),
-                        'required' => true
-                    ),
-                    array(
                         'type' => 'switch',
                         'label' => $this->l('Public number payment'),
                         'name' => 'WEIXIN_ENABLED_H5PAY',
@@ -401,10 +387,7 @@ class Weixinpay extends PaymentModule
             'WEIXIN_APPID' => Tools::getValue('WEIXIN_APPID', Configuration::get('WEIXIN_APPID')),
             'WEIXIN_MCH_ID' => Tools::getValue('WEIXIN_MCH_ID', Configuration::get('WEIXIN_MCH_ID')),
             'WEIXIN_KEY' => Tools::getValue('WEIXIN_KEY', Configuration::get('WEIXIN_KEY')),
-            'WEIXIN_NOTIFY_URL' => Tools::getValue('WEIXIN_NOTIFY_URL', Configuration::get('WEIXIN_NOTIFY_URL') ? Configuration::get('WEIXIN_NOTIFY_URL') : $domian . $this->_path . 'notify.php'),
-            'WEIXIN_VALIDATE_URL' => Tools::getValue('WEIXIN_VALIDATE_URL', Configuration::get('WEIXIN_VALIDATE_URL') ? Configuration::get('WEIXIN_VALIDATE_URL') : $domian . $this->_path . 'validate.php'),
-            'WEIXIN_ENABLED_H5PAY' => Tools::getValue('WEIXIN_ENABLED_H5PAY', Configuration::get('WEIXIN_ENABLED_H5PAY')),
-            'WEIXIN_APPSECRET' => Tools::getValue('WEIXIN_APPSECRET', Configuration::get('WEIXIN_APPSECRET'))
+            'WEIXIN_NOTIFY_URL' => Tools::getValue('WEIXIN_NOTIFY_URL', Configuration::get('WEIXIN_NOTIFY_URL') ? Configuration::get('WEIXIN_NOTIFY_URL') : $domian . $this->_path . 'notify.php')
         );
     }
 

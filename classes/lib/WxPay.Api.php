@@ -442,6 +442,29 @@ class WxPayApi
     {
         //获取通知的数据
         $xml = @$GLOBALS['HTTP_RAW_POST_DATA'];
+                if (defined('WX_DEBUG')) {
+            $xml = '<xml><return_code><![CDATA[SUCCESS]]></return_code>
+<return_msg><![CDATA[OK]]></return_msg>
+<appid><![CDATA[wx2e2725348da063d4]]></appid>
+<mch_id><![CDATA[1347689701]]></mch_id>
+<nonce_str><![CDATA[63aBj6MeOQ3K11hz]]></nonce_str>
+<sign><![CDATA[2EB149BEA6EA6A1D9873BAB59467F98F]]></sign>
+<result_code><![CDATA[SUCCESS]]></result_code>
+<openid><![CDATA[orxM8v-SHcCLZ0WSyO70YFgn2WFw]]></openid>
+<is_subscribe><![CDATA[N]]></is_subscribe>
+<trade_type><![CDATA[NATIVE]]></trade_type>
+<bank_type><![CDATA[CFT]]></bank_type>
+<total_fee>5</total_fee>
+<fee_type><![CDATA[CNY]]></fee_type>
+<transaction_id><![CDATA[4200000182201809101982357488]]></transaction_id>
+<out_trade_no><![CDATA[304]]></out_trade_no>
+<attach><![CDATA[]]></attach>
+<time_end><![CDATA[20180910131153]]></time_end>
+<trade_state><![CDATA[SUCCESS]]></trade_state>
+<cash_fee>5</cash_fee>
+<trade_state_desc><![CDATA[支付成功]]></trade_state_desc>
+</xml>';
+        }
         if (!$xml) {
             $xml = file_get_contents("php://input");
         }
