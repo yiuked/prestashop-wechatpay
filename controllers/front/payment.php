@@ -1,6 +1,6 @@
 <?php
 /**
- * 2010-2015 Yiuked
+ * 2010-2016 Yiuked
  *
  * NOTICE OF LICENSE
  *
@@ -18,7 +18,7 @@
  * versions in the future.
  *
  * @author    Yiuked SA <yiuked@vip.qq.com>
- * @copyright 2010-2015 Yiuked
+ * @copyright 2010-2016 Yiuked
  * @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  */
 
@@ -44,14 +44,9 @@ class WeixinpayPaymentModuleFrontController extends ModuleFrontController
         if (!$this->module->checkCurrency($cart) || !Validate::isLoadedObject($cart) || $cart->id_customer != $customer->id) {
             Tools::redirect('index.php?controller=order');
         }
-        if (!isset($this->context->cookie->qrcode_list_timestamp)) {
-            $this->context->cookie->qrcode_list_timestamp = time();
-        }
-        if (time() - $this->context->cookie->qrcode_list_timestamp >= WXP_TIMEOUT) {
-            $this->context->cookie->qrcode_list_timestamp = time();
-        }
-        $filename = 'WXP-' . $cart->id . "-" . $this->context->cookie->qrcode_list_timestamp . '.png';
-        $url = $this->generateQR($cart);
+
+        $filename = 'WXP-' . $cart->id . "-" . date('YmdHi') . '.png';
+        $url = $this->unifiedOrder($cart);
 
         if ($url) {
             QRcode::png($url, WXP_MODDULE_DIR . WXP_MODDULE_DATA . $filename, WXP_QRCODE_E_LEVEL, WXP_QRCODE_SIZE);
@@ -74,31 +69,7 @@ class WeixinpayPaymentModuleFrontController extends ModuleFrontController
         $this->setTemplate('payment_execution.tpl');
     }
 
-    public function generateQR($cart)
-    {
-        $signkey = Configuration::get('WEIXIN_KEY');
-        $appid = Configuration::get('WEIXIN_APPID');
-        $merchart = Configuration::get('WEIXIN_MCH_ID');
-        $params = array();
-        $params['appid'] = $appid;
-        $params['mch_id'] = $merchart;
-        $params['nonce_str'] = md5(time());
-        $params['product_id'] = $cart->id;
-        $params['time_stamp'] = time();
-        ksort($params);
-        $params_str = "";
-        foreach ($params as $key => $val) {
-            if (isset ($val) && @$val != "") {
-                $params_str .= $key . "=" . $val . "&";
-            }
-        }
-        $sign_str = $params_str . "key=" . $signkey;
-        $sign = Tools::strtoupper(md5($sign_str));
-        $url = "weixin://wxpay/bizpayurl?" . $params_str . "sign=" . $sign;
-        return $url;
-    }
-
-    public function unifiedOrder($cart, $reference)
+    public function unifiedOrder($cart)
     {
         $total = (float)$cart->getOrderTotal(true, Cart::BOTH);
         $total = (int)($total * 100);
@@ -106,7 +77,7 @@ class WeixinpayPaymentModuleFrontController extends ModuleFrontController
         $detail = '';
         $nbProducts = $cart->nbProducts();
         if ($nbProducts > 1) {
-            $detail = $this->module->l('Cart') . ' ' . $nbProducts . ' ' . $this->module->l('Products');
+            $detail = Configuration::get('PS_SHOP_NAME') . '-' . $nbProducts . ' ' . $this->module->l('Products');
         } else {
             $products = $cart->getProducts();
             $detail = $products[0]['name'];
@@ -130,46 +101,16 @@ class WeixinpayPaymentModuleFrontController extends ModuleFrontController
         $input = new WxPayUnifiedOrder();
         $input->SetBody($detail);
         $input->SetDetail($detail);
-        $input->SetOut_trade_no($reference);
+        $input->SetOut_trade_no($cart->id . '-' . date('YmdHis'));
         $input->SetTotal_fee($total);
         $input->SetTime_start($time_start);
         $input->SetTime_expire($time_expire);
         $input->SetNotify_url(Configuration::get('WEIXIN_NOTIFY_URL'));
         $input->SetTrade_type("NATIVE");
-        $input->SetProduct_id($reference);
+        $input->SetProduct_id($cart->id);
         $result = $notify->getPayUrl($input);
-
         if (isset($result["code_url"])) {
             return $result["code_url"];
-        }
-
-        return false;
-    }
-
-    public function generateOrder($id_cart)
-    {
-        $cart = new Cart((int)$id_cart);
-
-        if (!Validate::isLoadedObject($cart)) {
-            return false;
-        }
-
-        $customer = new Customer($cart->id_customer);
-
-        if (!Validate::isLoadedObject($customer)) {
-            return false;
-        }
-
-        $currency = new Currency(Currency::getIdByIsoCode(WXP_CURRENCY_ISO_CODE));
-        if (!Validate::isLoadedObject($currency)) {
-            return false;
-        }
-
-        $weixinpay = new Weixinpay();
-        $total = (float)$cart->getOrderTotal(true, Cart::BOTH);
-
-        if ($weixinpay->validateOrder($cart->id, Configuration::get('WEIXIN_STATUS_AWAITING'), $total, $weixinpay->displayName, null, array(), (int)$currency->id, false, $customer->secure_key)) {
-            return $weixinpay->currentOrder;
         }
 
         return false;

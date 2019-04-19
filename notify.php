@@ -27,7 +27,7 @@ require_once(_PS_MODULE_DIR_ . 'weixinpay/defines.php');
 require_once(WXP_MODDULE_DIR . 'weixinpay.php');
 require_once(WXP_MODDULE_DIR . 'classes/lib/WxPay.Notify.php');
 require_once(WXP_MODDULE_DIR . 'classes/Log.php');
-ob_start();
+
 //初始化日志
 $logHandler = new CLogFileHandler(WXP_MODDULE_DIR . WXP_MODDULE_LOGS . date('Y-m-d') . '.notify.log');
 $log = Log::init($logHandler, 15);
@@ -40,7 +40,7 @@ class PayNotifyCallBack extends WxPayNotify
         $input = new WxPayOrderQuery();
         $input->SetTransaction_id($transaction_id);
         $result = WxPayApi::orderQuery($input);
-        Log::DEBUG($transaction_id . "查询结果:" . json_encode($result));
+        Log::DEBUG($transaction_id . "查询结果:" . Tools::jsonEncode($result));
         if (array_key_exists("return_code", $result)
             && array_key_exists("result_code", $result)
             && $result["return_code"] == "SUCCESS"
@@ -57,13 +57,13 @@ class PayNotifyCallBack extends WxPayNotify
     //重写回调处理函数
     public function notifyProcess($data, &$msg)
     {
-        Log::DEBUG("HTTP_RAW_POST_DATA解析后数据:" . json_encode($data));
+        Log::DEBUG("HTTP_RAW_POST_DATA解析后数据:" . Tools::jsonEncode($data));
 
         if (!array_key_exists("transaction_id", $data)) {
             $msg = "输入参数不正确";
             return false;
         }
-        
+
         //查询订单，判断订单真实性
         if (!$this->queryOrder($data["transaction_id"])) {
             $msg = "订单查询失败";
@@ -78,11 +78,13 @@ class PayNotifyCallBack extends WxPayNotify
         $id_cart = (int)$order_query_result['out_trade_no'];
         $valida_total = (int)$order_query_result['total_fee'];
         $transaction_id = $order_query_result['transaction_id'];
+
         $cart = new Cart($id_cart);
         if (!Validate::isLoadedObject($cart)) {
             return false;
         }
         $customer = new Customer($cart->id_customer);
+
         if (!Validate::isLoadedObject($customer)) {
             return false;
         }
@@ -90,17 +92,10 @@ class PayNotifyCallBack extends WxPayNotify
         if (!Validate::isLoadedObject($currency)) {
             return false;
         }
-        $context = Context::getContext();
-        $context->cart = $cart;
-        $context->currency = $currency;
         $weixinpay = new Weixinpay();
-        $total = (float)$cart->getOrderTotal(true, Cart::BOTH);
-        $total_conver = (int)($total * 100);
+        $total_conver = $valida_total / 100;
         $order_status = _PS_OS_PAYMENT_;
-        if ($total_conver != $valida_total) {
-            $order_status = _PS_OS_ERROR_;
-        }
-        if ($weixinpay->validateOrder($cart->id, $order_status, $total, $weixinpay->displayName, null, array(), (int)$currency->id, false, $customer->secure_key)) {
+        if ($weixinpay->validateOrder($cart->id, $order_status, $total_conver, $weixinpay->displayName, null, array(), (int)$currency->id, false, $customer->secure_key)) {
             $order = new Order($weixinpay->currentOrder);
             $orderPayments = OrderPayment::getByOrderReference($order->reference);
             foreach ($orderPayments as $payment) {
@@ -112,10 +107,9 @@ class PayNotifyCallBack extends WxPayNotify
         return false;
     }
 }
-
+ob_start();
 $notify = new PayNotifyCallBack();
 $notify->handle(false);
-$systemOut = ob_get_contents();
-ob_clean();
-Log::DEBUG($transaction_id . "[system.out]:{$systemOut}");
-echo $systemOut;
+$content = ob_get_contents();
+Log::DEBUG("页面调试输出:" . $content);
+echo $content;

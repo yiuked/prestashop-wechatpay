@@ -69,7 +69,7 @@
             cache: false,
             success: function (result) {
                 if (result.status === 1) {
-                    location.href = returnUrl;
+                    location.href = returnUrl.replace(/&amp;/g, "&");
                 } else {
                     newRequest();
                 }

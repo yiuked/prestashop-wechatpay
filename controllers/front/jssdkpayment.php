@@ -46,20 +46,17 @@ class WeixinpayJssdkPaymentModuleFrontController extends ModuleFrontController
             Tools::redirect('index.php?controller=order');
         }
         if (Tools::getValue('jssdkConfrimOrder') == 1) {
-            die(json_encode(array(
+            die(Tools::jsonEncode(array(
                 'statusCode' => 1,
             )));
         }
-
         if (Tools::getValue('jssdkUnifiedOrder') == '1' && Tools::getValue('openID')) {
-
-
             $cart = new Cart($cart->id);
             $result = $this->unifiedOrder($cart, Tools::getValue('openID'));
 
-            die(json_encode(array(
+            die(Tools::jsonEncode(array(
                 'statusCode' => 1,
-                'jsApiParameters' => json_decode($tools->GetJsApiParameters($result))
+                'jsApiParameters' => Tools::jsonDecode($tools->GetJsApiParameters($result))
             )));
         }
 
@@ -74,14 +71,14 @@ class WeixinpayJssdkPaymentModuleFrontController extends ModuleFrontController
             'openId' => $openId,
             'rand_args'=> $cart->id,
             'currencies' => $this->module->getCurrency((int)$cart->id_currency),
-            'total_to_pay' => $cart->getOrderTotal(true, Cart::BOTH),
+            'total' => $cart->getOrderTotal(true, Cart::BOTH),
             'return_url' => Context::getContext()->link->getModuleLink('weixinpay', 'return', array('id_cart' => $cart->id)),
             'this_path' => $this->module->getPathUri(),
             'this_path_bw' => $this->module->getPathUri(),
             'this_path_ssl' => Tools::getShopDomainSsl(true, true) . __PS_BASE_URI__ . 'modules/' . $this->module->name . '/'
         ));
 
-        $this->setTemplate('module:weixinpay/views/templates/front/payment_mobile_1.7.tpl');
+        $this->setTemplate('payment_mobile.tpl');
     }
 
     /**

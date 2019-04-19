@@ -265,9 +265,9 @@ class QRsplit
                         $length = $this->eat8();
                     }
                     break;
-                default: $length = $this->eat8();
+                default:
+                    $length = $this->eat8();
                     break;
-
             }
 
             if ($length == 0) {

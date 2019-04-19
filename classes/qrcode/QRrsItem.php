@@ -116,8 +116,7 @@ class QRrsItem
         $rs->gfpoly = $gfpoly;
 
         /* Find prim-th root of 1, used in decoding */
-        for ($iprim=1; ($iprim % $prim) != 0; $iprim += $rs->nn) {
-
+        for ($iprim = 1; ($iprim % $prim) != 0; $iprim += $rs->nn) {
         }
 
         $rs->iprim = (int) ($iprim / $prim);

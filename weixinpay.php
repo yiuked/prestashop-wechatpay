@@ -40,7 +40,7 @@ class Weixinpay extends PaymentModule
     {
         $this->name = 'weixinpay';
         $this->tab = 'payments_gateways';
-        $this->version = '1.0.4.17';
+        $this->version = '1.6.6';
         $this->author = 'Yiuked';
         $this->controllers = array('payment', 'return');
         $this->is_eu_compatible = 1;
@@ -49,7 +49,7 @@ class Weixinpay extends PaymentModule
         $this->currencies_mode = 'checkbox';
         $this->module_key = '3ec3536af1d608ffbd41748925a9fd55';
 
-        $config = Configuration::getMultiple(array('WEIXIN_APPID', 'WEIXIN_MCH_ID', 'WEIXIN_NOTIFY_URL', 'WEIXIN_KEY',  'WEIXIN_ENABLED_H5PAY', 'WEIXIN_APPSECRET'));
+        $config = Configuration::getMultiple(array('WEIXIN_APPID', 'WEIXIN_MCH_ID', 'WEIXIN_NOTIFY_URL', 'WEIXIN_KEY', 'WEIXIN_ENABLED_H5PAY', 'WEIXIN_APPSECRET'));
         if (!empty($config['WEIXIN_APPID'])) {
             $this->appid = $config['WEIXIN_APPID'];
         }
@@ -87,7 +87,7 @@ class Weixinpay extends PaymentModule
 
     public function install()
     {
-        if (!parent::install() || !$this->registerHook('payment') || !$this->registerHook('paymentOptions')|| !$this->registerHook('displayPaymentEU') || !$this->registerHook('displayHeader') || !$this->registerHook('paymentReturn')) {
+        if (!parent::install() || !$this->registerHook('payment') || !$this->registerHook('displayPaymentEU') || !$this->registerHook('displayHeader') || !$this->registerHook('paymentReturn')) {
             return false;
         }
 
@@ -121,7 +121,7 @@ class Weixinpay extends PaymentModule
                 $this->_postErrors[] = $this->l('Merchant key is required.');
             } elseif (!Tools::getValue('WEIXIN_NOTIFY_URL')) {
                 $this->_postErrors[] = $this->l('Notify url is required.');
-            }elseif (Tools::getValue('WEIXIN_ENABLED_H5PAY') && !Tools::getValue('WEIXIN_APPSECRET')) {
+            } elseif (Tools::getValue('WEIXIN_ENABLED_H5PAY') && !Tools::getValue('WEIXIN_APPSECRET')) {
                 $this->_postErrors[] = $this->l('APPSecret is required.');
             }
         }
@@ -183,6 +183,7 @@ class Weixinpay extends PaymentModule
 
         $this->smarty->assign(array(
             'this_path' => $this->_path,
+            'is_mobile' => $this->context->getMobileDetect()->isMobile(),
             'enable_h5pay' => (int)$this->H5Pay,
             'this_path_bw' => $this->_path,
             'this_path_ssl' => Tools::getShopDomainSsl(true, true) . __PS_BASE_URI__ . 'modules/' . $this->name . '/'
@@ -210,18 +211,23 @@ class Weixinpay extends PaymentModule
 
     public function ajaxCall()
     {
-        if (Tools::getIsset('rangargs')) {
-            $id_cart = Tools::getValue('rangargs');
-            $id_order = Order::getOrderByCartId($id_cart);
-            if ($id_order > 0) {
-                $order = new Order($id_order);
-                if ($order->current_state == Configuration::get('PS_OS_PAYMENT')) {
-                    die(json_encode(array('status' => 1)));
+        if (Context::getContext()->cookie->exists() && Context::getContext()->customer->isLogged()) {
+            if (Tools::getIsset('rangargs')) {
+                $id_cart = Tools::getValue('rangargs');
+                $cart = new Cart($id_cart);
+                if ($cart->id_customer == Context::getContext()->cookie->id_customer) {
+                    $id_order = Order::getOrderByCartId($id_cart);
+                    if ($id_order > 0) {
+                        $status = OrderHistory::getLastOrderState($id_order);
+                        if ($status->id == Configuration::get('PS_OS_PAYMENT')) {
+                            die(Tools::jsonEncode(array('status' => 1)));
+                        }
+                    }
                 }
             }
+            sleep(1);
+            die(Tools::jsonEncode(array('status' => 0)));
         }
-        sleep(1);
-        die(json_encode(array('status' => 0)));
     }
 
     public function hookPaymentReturn($params)
@@ -229,30 +235,22 @@ class Weixinpay extends PaymentModule
         if (!$this->active) {
             return;
         }
-        if (!isset($params['order'])) {
-            $params['order'] = $params['objOrder'];
-        }
 
-        $state = $params['order']->getCurrentState();
+        $state = $params['objOrder']->getCurrentState();
         if ($state == Configuration::get('PS_OS_PAYMENT')) {
             $this->smarty->assign(array(
-                'total_to_pay' => Tools::displayPrice(
-                    $params['order']->getOrdersTotalPaid(),
-                    new Currency($params['order']->id_currency),
-                    false
-                ),
-                'shop_name' => $this->context->shop->name,
+                'total_to_pay' => Tools::displayPrice($params['total_to_pay'], $params['currencyObj'], false),
                 'status' => 'ok',
-                'id_order' => $params['order']->id
+                'id_order' => $params['objOrder']->id
             ));
-            if (isset($params['order']->reference) && !empty($params['order']->reference)) {
-                $this->smarty->assign('reference', $params['order']->reference);
+            if (isset($params['objOrder']->reference) && !empty($params['objOrder']->reference)) {
+                $this->smarty->assign('reference', $params['objOrder']->reference);
             }
         } else {
             $this->smarty->assign('status', 'failed');
         }
 
-        return $this->fetch('module:weixinpay/views/templates/hook/payment_return.tpl');
+        return $this->display(__FILE__, 'payment_return.tpl');
     }
 
     public function checkCurrency($cart)
@@ -315,7 +313,7 @@ class Weixinpay extends PaymentModule
                     ),
                     array(
                         'type' => 'text',
-                        'label' => $this->l('API Key'),
+                        'label' => $this->l('Key'),
                         'name' => 'WEIXIN_KEY',
                         'desc' => $this->l('Login WeChat merchant platform set up on its own.'),
                         'required' => true
@@ -387,7 +385,9 @@ class Weixinpay extends PaymentModule
             'WEIXIN_APPID' => Tools::getValue('WEIXIN_APPID', Configuration::get('WEIXIN_APPID')),
             'WEIXIN_MCH_ID' => Tools::getValue('WEIXIN_MCH_ID', Configuration::get('WEIXIN_MCH_ID')),
             'WEIXIN_KEY' => Tools::getValue('WEIXIN_KEY', Configuration::get('WEIXIN_KEY')),
-            'WEIXIN_NOTIFY_URL' => Tools::getValue('WEIXIN_NOTIFY_URL', Configuration::get('WEIXIN_NOTIFY_URL') ? Configuration::get('WEIXIN_NOTIFY_URL') : $domian . $this->_path . 'notify.php')
+            'WEIXIN_NOTIFY_URL' => Tools::getValue('WEIXIN_NOTIFY_URL', Configuration::get('WEIXIN_NOTIFY_URL') ? Configuration::get('WEIXIN_NOTIFY_URL') : $domian . $this->_path . 'notify.php'),
+            'WEIXIN_ENABLED_H5PAY' => Tools::getValue('WEIXIN_ENABLED_H5PAY', Configuration::get('WEIXIN_ENABLED_H5PAY')),
+            'WEIXIN_APPSECRET' => Tools::getValue('WEIXIN_APPSECRET', Configuration::get('WEIXIN_APPSECRET'))
         );
     }
 

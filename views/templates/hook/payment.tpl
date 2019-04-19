@@ -24,7 +24,7 @@
 <div class="row">
 	<div class="col-xs-12">
 		<p class="payment_module">
-			{if $enable_h5pay && $mobile_device}
+			{if $enable_h5pay && $is_mobile}
 			<a class="winxinpay" href="{$link->getModuleLink('weixinpay', 'jssdkpayment')|escape:'htmlall':'UTF-8'}" title="{l s='Pay by WeChat payment' mod='weixinpay'}">
 				{l s='Pay by WeChat payment' mod='weixinpay'}
 			</a>

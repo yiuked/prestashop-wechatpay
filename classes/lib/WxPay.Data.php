@@ -229,13 +229,13 @@ class WxPayResults extends WxPayDataBase
     {
         $obj = new self();
         $obj->FromXml($xml);
-
+        // 官方案列是将此代码（签名）放在#1处，这导致可以绕过验证查询任意定单的交易状态。
+        $obj->CheckSign();
         //fix bug 2015-06-29
         if (isset($obj->values['return_code']) && $obj->values['return_code'] != 'SUCCESS') {
             return $obj->GetValues();
         }
-        $obj->CheckSign();
-
+        // 引用位置#1
         return $obj->GetValues();
     }
 }
